@@ -76,95 +76,50 @@ export const castawaysService: CastawaysService = {
       } satisfies UnknownError);
     }
   },
-  search: async (args) => {
-    return match(args)
-      .with(
-        {
-          name: P.nullish,
-          season: P.nullish,
-        },
-        async () => {
-          try {
-            const castawaysAndSeasons = await db
-              .select({
-                id: castaways.id,
-                name: castaways.name,
-                seasonNumber: seasonMembership.castawaySeasonNumber,
-                seasonName: seasons.name,
-              })
-              .from(castaways)
-              .innerJoin(
-                seasonMembership,
-                eq(castaways.id, seasonMembership.castawayId),
-              )
-              .innerJoin(
-                seasons,
-                eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-              );
+  search: async ({ name, season }) => {
+    try {
+      const castawaysAndSeasons = await db
+        .select({
+          id: castaways.id,
+          name: castaways.name,
+          seasonNumber: seasonMembership.castawaySeasonNumber,
+          seasonName: seasons.name,
+        })
+        .from(castaways)
+        .where(
+          and(
+            ...[
+              ...(name ? [ilike(castaways.name, `${name}%`)] : []),
+              ...(season
+                ? [eq(seasonMembership.castawaySeasonNumber, season)]
+                : []),
+            ],
+          ),
+        )
+        .innerJoin(
+          seasonMembership,
+          eq(castaways.id, seasonMembership.castawayId),
+        )
+        .innerJoin(
+          seasons,
+          eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
+        );
 
-            const res = joinCastawaysWithSeasons(castawaysAndSeasons);
+      const res = joinCastawaysWithSeasons(castawaysAndSeasons);
 
-            return ok(res);
-          } catch (e) {
-            if (e instanceof Error) {
-              return err({
-                type: "DATABASE_ERROR",
-                message: `Error occurred querying the database: ${e.message}`,
-              } satisfies DBError);
-            }
+      return ok(res);
+    } catch (e) {
+      if (e instanceof Error) {
+        return err({
+          type: "DATABASE_ERROR",
+          message: `Error occurred querying the database: ${e.message}`,
+        } satisfies DBError);
+      }
 
-            return err({
-              type: "UNKNOWN",
-              message: "An unknown error occurred",
-            } satisfies UnknownError);
-          }
-        },
-      )
-      .otherwise(async ({ name, season }) => {
-        try {
-          const castawaysAndSeasons = await db
-            .select({
-              id: castaways.id,
-              name: castaways.name,
-              seasonNumber: seasonMembership.castawaySeasonNumber,
-              seasonName: seasons.name,
-            })
-            .from(castaways)
-            .where(
-              and(
-                ...[
-                  ...(name ? [ilike(castaways.name, `${name}%`)] : []),
-                  ...(season
-                    ? [eq(seasonMembership.castawaySeasonNumber, season)]
-                    : []),
-                ],
-              ),
-            )
-            .innerJoin(
-              seasonMembership,
-              eq(castaways.id, seasonMembership.castawayId),
-            )
-            .innerJoin(
-              seasons,
-              eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-            );
-
-          const res = joinCastawaysWithSeasons(castawaysAndSeasons);
-
-          return ok(res);
-        } catch (e) {
-          if (e instanceof Error) {
-            return err({
-              type: "DATABASE_ERROR",
-              message: `Error occurred querying the database: ${e.message}`,
-            } satisfies DBError);
-          }
-
-          return err({
-            type: "UNKNOWN",
-            message: "An unknown error occurred",
-          } satisfies UnknownError);
-        }
-      });
+      return err({
+        type: "UNKNOWN",
+        message: "An unknown error occurred",
+      } satisfies UnknownError);
+    }
   },
 };
