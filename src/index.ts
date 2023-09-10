@@ -1,22 +1,13 @@
 import { Elysia, t } from "elysia";
 import { db } from "./db";
 import { Season, castaways, seasonMembership, seasons } from "./db/schema";
-import { match, P } from "ts-pattern";
 import {
   ApiResponse,
   CastawayReadResponse,
   CastawaySearchResponse,
 } from "./types";
-import {
-  getAllCastawaysWithSeasons,
-  getAllSeasons,
-  getCastawayWithSeasonsById,
-  getCastawayWithSeasonsByName,
-  getCastawayWithSeasonsByNameAndSeason,
-  getCastawayWithSeasonsBySeason,
-  getSeasonByNumber,
-  getSeasonsByName,
-} from "./db/service";
+import { castawaysService } from "./services/castaways";
+import { seasonService } from "./services/season";
 
 const app = new Elysia()
   .group("/castaways", (app) =>
@@ -24,29 +15,7 @@ const app = new Elysia()
       .get(
         "/",
         async (ctx): ApiResponse<CastawaySearchResponse> => {
-          console.log(ctx.query);
-          const res = await match(ctx.query)
-            .with(
-              {
-                name: P.string,
-                season: P.number,
-              },
-              ({ name, season }) =>
-                getCastawayWithSeasonsByNameAndSeason(name, season),
-            )
-            .with(
-              {
-                name: P.string,
-              },
-              ({ name }) => getCastawayWithSeasonsByName(name),
-            )
-            .with(
-              {
-                season: P.number,
-              },
-              ({ season }) => getCastawayWithSeasonsBySeason(season),
-            )
-            .otherwise(() => getAllCastawaysWithSeasons());
+          const res = await castawaysService.search(ctx.query);
 
           if (res.isOk()) {
             return {
@@ -70,7 +39,7 @@ const app = new Elysia()
       .get(
         "/:id",
         async (ctx): ApiResponse<CastawayReadResponse> => {
-          const castawayAndSeasons = await getCastawayWithSeasonsById(
+          const castawayAndSeasons = await castawaysService.readById(
             ctx.params.id,
           );
 
@@ -98,37 +67,19 @@ const app = new Elysia()
       .get(
         "/",
         async (ctx): ApiResponse<Season[]> => {
-          return match(ctx.query)
-            .with({ name: P.string }, async ({ name }) => {
-              const seasonsRes = await getSeasonsByName(name);
+          const seasonsRes = await seasonService.search(ctx.query);
 
-              if (seasonsRes.isOk()) {
-                return {
-                  ok: true as const,
-                  data: seasonsRes.value,
-                };
-              } else {
-                return {
-                  ok: false as const,
-                  error: seasonsRes.error,
-                };
-              }
-            })
-            .otherwise(async () => {
-              const seasonsRes = await getAllSeasons();
-
-              if (seasonsRes.isOk()) {
-                return {
-                  ok: true as const,
-                  data: seasonsRes.value,
-                };
-              } else {
-                return {
-                  ok: false as const,
-                  error: seasonsRes.error,
-                };
-              }
-            });
+          if (seasonsRes.isOk()) {
+            return {
+              ok: true as const,
+              data: seasonsRes.value,
+            };
+          } else {
+            return {
+              ok: false as const,
+              error: seasonsRes.error,
+            };
+          }
         },
         {
           query: t.Object({
@@ -139,7 +90,9 @@ const app = new Elysia()
       .get(
         "/:number",
         async (ctx): ApiResponse<Season> => {
-          const seasonsRes = await getSeasonByNumber(ctx.params.number);
+          const seasonsRes = await seasonService.readByNumber(
+            ctx.params.number,
+          );
 
           if (seasonsRes.isOk()) {
             return {
