@@ -9,30 +9,17 @@ import {
 import { castawaysService } from "./services/castaways";
 import { seasonService } from "./services/season";
 import { match } from "ts-pattern";
+import { wrapApiResponse } from "./util";
 
 const app = new Elysia()
   .group("/castaways", (app) =>
     app
       .get(
         "/",
-        async (ctx): ApiResponse<CastawaySearchResponse> => {
+        async (ctx): Promise<ApiResponse<CastawaySearchResponse>> => {
           const res = await castawaysService.search(ctx.query);
 
-          if (res.isOk()) {
-            return {
-              ok: true as const,
-              data: res.value,
-            };
-          } else {
-            ctx.set.status = 500;
-            return {
-              ok: false as const,
-              error: {
-                message: res.error.message,
-                type: res.error.type,
-              },
-            };
-          }
+          return wrapApiResponse(res, ctx.set);
         },
         {
           query: t.Object({
@@ -43,39 +30,12 @@ const app = new Elysia()
       )
       .get(
         "/:id",
-        async (ctx): ApiResponse<CastawayReadResponse> => {
+        async (ctx): Promise<ApiResponse<CastawayReadResponse>> => {
           const castawayAndSeasons = await castawaysService.readById(
             ctx.params.id,
           );
 
-          if (castawayAndSeasons.isOk()) {
-            return {
-              ok: true as const,
-              data: castawayAndSeasons.value,
-            };
-          } else {
-            return match(castawayAndSeasons.error)
-              .with({ type: "NOT_FOUND" }, ({ message, type }) => {
-                ctx.set.status = 404;
-                return {
-                  ok: false as const,
-                  error: {
-                    message,
-                    type,
-                  },
-                };
-              })
-              .otherwise(({ message, type }) => {
-                ctx.set.status = 500;
-                return {
-                  ok: false as const,
-                  error: {
-                    message,
-                    type,
-                  },
-                };
-              });
-          }
+          return wrapApiResponse(castawayAndSeasons, ctx.set);
         },
         {
           params: t.Object({
@@ -88,24 +48,10 @@ const app = new Elysia()
     app
       .get(
         "/",
-        async (ctx): ApiResponse<Season[]> => {
+        async (ctx): Promise<ApiResponse<Season[]>> => {
           const seasonsRes = await seasonService.search(ctx.query);
 
-          if (seasonsRes.isOk()) {
-            return {
-              ok: true as const,
-              data: seasonsRes.value,
-            };
-          } else {
-            ctx.set.status = 500;
-            return {
-              ok: false as const,
-              error: {
-                message: seasonsRes.error.message,
-                type: seasonsRes.error.type,
-              },
-            };
-          }
+          return wrapApiResponse(seasonsRes, ctx.set);
         },
         {
           query: t.Object({
@@ -115,39 +61,12 @@ const app = new Elysia()
       )
       .get(
         "/:number",
-        async (ctx): ApiResponse<Season> => {
+        async (ctx): Promise<ApiResponse<Season>> => {
           const seasonsRes = await seasonService.readByNumber(
             ctx.params.number,
           );
 
-          if (seasonsRes.isOk()) {
-            return {
-              ok: true as const,
-              data: seasonsRes.value,
-            };
-          } else {
-            return match(seasonsRes.error)
-              .with({ type: "NOT_FOUND" }, ({ message, type }) => {
-                ctx.set.status = 404;
-                return {
-                  ok: false as const,
-                  error: {
-                    message,
-                    type,
-                  },
-                };
-              })
-              .otherwise(({ message, type }) => {
-                ctx.set.status = 500;
-                return {
-                  ok: false as const,
-                  error: {
-                    message,
-                    type,
-                  },
-                };
-              });
-          }
+          return wrapApiResponse(seasonsRes, ctx.set);
         },
         {
           params: t.Object({
