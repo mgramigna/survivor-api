@@ -1,4 +1,77 @@
 import { match } from "ts-pattern";
+import { Castaway, Tribe } from "./schema";
+
+export function joinTribeWithCastaways(
+  input: {
+    id: number;
+    name: string;
+    type: Tribe["type"];
+    seasonNumber: number;
+    castawayId: number;
+    memberName: string;
+  }[],
+): (Tribe & { members: Castaway[] })[] {
+  // Tribe id -> tribe info map
+  const lookup: Map<
+    number,
+    {
+      name: string;
+      type: Tribe["type"];
+      tribeSeasonNumber: number;
+      memberLookup: Map<number, string>;
+    }
+  > = new Map();
+  input.forEach((tribeAndCastaway) => {
+    match(lookup.has(tribeAndCastaway.id))
+      .with(true, () => {
+        if (
+          !lookup
+            .get(tribeAndCastaway.id)!
+            .memberLookup.has(tribeAndCastaway.castawayId)
+        ) {
+          lookup
+            .get(tribeAndCastaway.id)!
+            .memberLookup.set(
+              tribeAndCastaway.castawayId,
+              tribeAndCastaway.memberName,
+            );
+        }
+      })
+      .with(false, () => {
+        const newMap: Map<number, string> = new Map();
+        newMap.set(tribeAndCastaway.castawayId, tribeAndCastaway.memberName);
+        lookup.set(tribeAndCastaway.id, {
+          name: tribeAndCastaway.name,
+          type: tribeAndCastaway.type,
+          tribeSeasonNumber: tribeAndCastaway.seasonNumber,
+          memberLookup: newMap,
+        });
+      });
+  });
+
+  const res: (Tribe & { members: Castaway[] })[] = [];
+
+  for (const [id, info] of lookup) {
+    const entry: (typeof res)[number] = {
+      id,
+      name: info.name,
+      type: info.type,
+      tribeSeasonNumber: info.tribeSeasonNumber,
+      members: [],
+    };
+
+    for (const [castawayId, castawayName] of info.memberLookup) {
+      entry.members.push({
+        id: castawayId,
+        name: castawayName,
+      });
+    }
+
+    res.push(entry);
+  }
+
+  return res;
+}
 
 export function joinCastawaysWithSeasons(
   input: {

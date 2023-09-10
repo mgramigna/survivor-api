@@ -65,3 +65,16 @@ export const tribes = pgTable("tribes", {
 
 export type Tribe = InferSelectModel<typeof tribes>;
 export type TribeInsert = InferInsertModel<typeof tribes>;
+
+export const tribeMembership = pgTable("tribe_membership", {
+  id: serial("id").primaryKey(),
+  castawayId: integer("castaway_id")
+    .references(() => castaways.id)
+    .notNull(),
+  tribeId: integer("tribe_id")
+    .references(() => tribes.id)
+    .notNull(),
+});
+
+export type TribeMembership = InferSelectModel<typeof tribeMembership>;
+export type TribeMembershipInsert = InferInsertModel<typeof tribeMembership>;

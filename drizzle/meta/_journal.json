@@ -43,6 +43,13 @@
       "when": 1694365089554,
       "tag": "0005_odd_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1694367623685,
+      "tag": "0006_yellow_the_stranger",
+      "breakpoints": true
     }
   ]
 }
