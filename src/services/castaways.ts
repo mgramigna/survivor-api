@@ -80,10 +80,10 @@ export const castawaysService: CastawaysService = {
     return match(args)
       .with(
         {
-          name: P.string,
-          season: P.number,
+          name: P.nullish,
+          season: P.nullish,
         },
-        async ({ name, season }) => {
+        async () => {
           try {
             const castawaysAndSeasons = await db
               .select({
@@ -93,12 +93,6 @@ export const castawaysService: CastawaysService = {
                 seasonName: seasons.name,
               })
               .from(castaways)
-              .where(
-                and(
-                  ilike(castaways.name, `${name}%`),
-                  eq(seasonMembership.castawaySeasonNumber, season),
-                ),
-              )
               .innerJoin(
                 seasonMembership,
                 eq(castaways.id, seasonMembership.castawayId),
@@ -126,91 +120,7 @@ export const castawaysService: CastawaysService = {
           }
         },
       )
-      .with(
-        {
-          name: P.string,
-        },
-        async ({ name }) => {
-          try {
-            const castawaysAndSeasons = await db
-              .select({
-                id: castaways.id,
-                name: castaways.name,
-                seasonNumber: seasonMembership.castawaySeasonNumber,
-                seasonName: seasons.name,
-              })
-              .from(castaways)
-              .where(ilike(castaways.name, `${name}%`))
-              .innerJoin(
-                seasonMembership,
-                eq(castaways.id, seasonMembership.castawayId),
-              )
-              .innerJoin(
-                seasons,
-                eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-              );
-
-            const res = joinCastawaysWithSeasons(castawaysAndSeasons);
-
-            return ok(res);
-          } catch (e) {
-            if (e instanceof Error) {
-              return err({
-                type: "DATABASE_ERROR",
-                message: `Error occurred querying the database: ${e.message}`,
-              } satisfies DBError);
-            }
-
-            return err({
-              type: "UNKNOWN",
-              message: "An unknown error occurred",
-            } satisfies UnknownError);
-          }
-        },
-      )
-      .with(
-        {
-          season: P.number,
-        },
-        async ({ season }) => {
-          try {
-            const castawaysAndSeasons = await db
-              .select({
-                id: castaways.id,
-                name: castaways.name,
-                seasonNumber: seasonMembership.castawaySeasonNumber,
-                seasonName: seasons.name,
-              })
-              .from(castaways)
-              .where(eq(seasonMembership.castawaySeasonNumber, season))
-              .innerJoin(
-                seasonMembership,
-                eq(castaways.id, seasonMembership.castawayId),
-              )
-              .innerJoin(
-                seasons,
-                eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-              );
-
-            const res = joinCastawaysWithSeasons(castawaysAndSeasons);
-
-            return ok(res);
-          } catch (e) {
-            if (e instanceof Error) {
-              return err({
-                type: "DATABASE_ERROR",
-                message: `Error occurred querying the database: ${e.message}`,
-              } satisfies DBError);
-            }
-
-            return err({
-              type: "UNKNOWN",
-              message: "An unknown error occurred",
-            } satisfies UnknownError);
-          }
-        },
-      )
-      .otherwise(async () => {
+      .otherwise(async ({ name, season }) => {
         try {
           const castawaysAndSeasons = await db
             .select({
@@ -220,6 +130,16 @@ export const castawaysService: CastawaysService = {
               seasonName: seasons.name,
             })
             .from(castaways)
+            .where(
+              and(
+                ...[
+                  ...(name ? [ilike(castaways.name, `${name}%`)] : []),
+                  ...(season
+                    ? [eq(seasonMembership.castawaySeasonNumber, season)]
+                    : []),
+                ],
+              ),
+            )
             .innerJoin(
               seasonMembership,
               eq(castaways.id, seasonMembership.castawayId),

@@ -70,8 +70,22 @@ export const seasonService: SeasonService = {
         }
       })
       .otherwise(async () => {
-        const seasonsRes = await db.select().from(seasons);
-        return ok(seasonsRes);
+        try {
+          const seasonsRes = await db.select().from(seasons);
+          return ok(seasonsRes);
+        } catch (e) {
+          if (e instanceof Error) {
+            return err({
+              type: "DATABASE_ERROR",
+              message: `Error occurred querying the database: ${e.message}`,
+            } satisfies DBError);
+          }
+
+          return err({
+            type: "UNKNOWN",
+            message: "An unknown error occurred",
+          } satisfies UnknownError);
+        }
       });
   },
 };
