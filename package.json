@@ -4,11 +4,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
-    "generate": "drizzle-kit generate:pg"
+    "generate": "drizzle-kit generate:pg",
+    "migrate": "bun run bin/migrate.ts"
   },
   "dependencies": {
     "@vercel/postgres": "^0.4.1",
-    "drizzle-orm": "^0.28.6"
+    "drizzle-orm": "^0.28.6",
+    "elysia": "^0.6.20",
+    "ts-pattern": "^5.0.5"
   },
   "devDependencies": {
     "bun-types": "latest",
