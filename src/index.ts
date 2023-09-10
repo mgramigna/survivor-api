@@ -8,6 +8,7 @@ import {
 } from "./types";
 import { castawaysService } from "./services/castaways";
 import { seasonService } from "./services/season";
+import { match } from "ts-pattern";
 
 const app = new Elysia()
   .group("/castaways", (app) =>
@@ -23,9 +24,13 @@ const app = new Elysia()
               data: res.value,
             };
           } else {
+            ctx.set.status = 500;
             return {
               ok: false as const,
-              error: res.error,
+              error: {
+                message: res.error.message,
+                type: res.error.type,
+              },
             };
           }
         },
@@ -49,10 +54,27 @@ const app = new Elysia()
               data: castawayAndSeasons.value,
             };
           } else {
-            return {
-              ok: false as const,
-              error: castawayAndSeasons.error,
-            };
+            return match(castawayAndSeasons.error)
+              .with({ type: "NOT_FOUND" }, ({ message, type }) => {
+                ctx.set.status = 404;
+                return {
+                  ok: false as const,
+                  error: {
+                    message,
+                    type,
+                  },
+                };
+              })
+              .otherwise(({ message, type }) => {
+                ctx.set.status = 500;
+                return {
+                  ok: false as const,
+                  error: {
+                    message,
+                    type,
+                  },
+                };
+              });
           }
         },
         {
@@ -75,9 +97,13 @@ const app = new Elysia()
               data: seasonsRes.value,
             };
           } else {
+            ctx.set.status = 500;
             return {
               ok: false as const,
-              error: seasonsRes.error,
+              error: {
+                message: seasonsRes.error.message,
+                type: seasonsRes.error.type,
+              },
             };
           }
         },
@@ -100,10 +126,27 @@ const app = new Elysia()
               data: seasonsRes.value,
             };
           } else {
-            return {
-              ok: false as const,
-              error: seasonsRes.error,
-            };
+            return match(seasonsRes.error)
+              .with({ type: "NOT_FOUND" }, ({ message, type }) => {
+                ctx.set.status = 404;
+                return {
+                  ok: false as const,
+                  error: {
+                    message,
+                    type,
+                  },
+                };
+              })
+              .otherwise(({ message, type }) => {
+                ctx.set.status = 500;
+                return {
+                  ok: false as const,
+                  error: {
+                    message,
+                    type,
+                  },
+                };
+              });
           }
         },
         {

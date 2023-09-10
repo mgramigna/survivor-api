@@ -4,6 +4,7 @@ import { and, eq, ilike } from "drizzle-orm";
 import { P, match } from "ts-pattern";
 import { db } from "../db";
 import { joinCastawaysWithSeasons } from "../db/util";
+import { DBError, NotFoundError, UnknownError } from "../types/errors";
 
 export type CastawayWithSeasons = {
   id: number;
@@ -12,45 +13,68 @@ export type CastawayWithSeasons = {
 };
 
 type CastawaysService = {
-  readById: (id: number) => Promise<Result<CastawayWithSeasons, "NOT_FOUND">>;
+  readById: (
+    id: number,
+  ) => Promise<
+    Result<CastawayWithSeasons, NotFoundError | DBError | UnknownError>
+  >;
   search: (args: {
     name?: string;
     season?: number;
-  }) => Promise<Result<CastawayWithSeasons[], never>>;
+  }) => Promise<Result<CastawayWithSeasons[], DBError | UnknownError>>;
 };
 
 export const castawaysService: CastawaysService = {
   readById: async (id) => {
-    const castawayAndSeasons = await db
-      .select({
-        id: castaways.id,
-        name: castaways.name,
-        seasonNumber: seasonMembership.castawaySeasonNumber,
-        seasonName: seasons.name,
-      })
-      .from(castaways)
-      .innerJoin(
-        seasonMembership,
-        eq(castaways.id, seasonMembership.castawayId),
-      )
-      .innerJoin(
-        seasons,
-        eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-      )
-      .where(eq(castaways.id, id));
+    try {
+      const castawayAndSeasons = await db
+        .select({
+          id: castaways.id,
+          name: castaways.name,
+          seasonNumber: seasonMembership.castawaySeasonNumber,
+          seasonName: seasons.name,
+        })
+        .from(castaways)
+        .innerJoin(
+          seasonMembership,
+          eq(castaways.id, seasonMembership.castawayId),
+        )
+        .innerJoin(
+          seasons,
+          eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
+        )
+        .where(eq(castaways.id, id));
 
-    return match(castawayAndSeasons.length)
-      .with(0, () => err("NOT_FOUND" as const))
-      .otherwise(() =>
-        ok({
-          id: castawayAndSeasons[0].id,
-          name: castawayAndSeasons[0].name,
-          seasons: castawayAndSeasons.map((cas) => ({
-            number: cas.seasonNumber,
-            name: cas.seasonName,
-          })),
-        }),
-      );
+      return match(castawayAndSeasons.length)
+        .with(0, () =>
+          err({
+            type: "NOT_FOUND",
+            message: `Castaway with id ${id} does not exist`,
+          } satisfies NotFoundError),
+        )
+        .otherwise(() =>
+          ok({
+            id: castawayAndSeasons[0].id,
+            name: castawayAndSeasons[0].name,
+            seasons: castawayAndSeasons.map((cas) => ({
+              number: cas.seasonNumber,
+              name: cas.seasonName,
+            })),
+          }),
+        );
+    } catch (e) {
+      if (e instanceof Error) {
+        return err({
+          type: "DATABASE_ERROR",
+          message: `Error occurred querying the database: ${e.message}`,
+        } satisfies DBError);
+      }
+
+      return err({
+        type: "UNKNOWN",
+        message: "An unknown error occurred",
+      } satisfies UnknownError);
+    }
   },
   search: async (args) => {
     return match(args)
@@ -60,32 +84,46 @@ export const castawaysService: CastawaysService = {
           season: P.number,
         },
         async ({ name, season }) => {
-          const castawaysAndSeasons = await db
-            .select({
-              id: castaways.id,
-              name: castaways.name,
-              seasonNumber: seasonMembership.castawaySeasonNumber,
-              seasonName: seasons.name,
-            })
-            .from(castaways)
-            .where(
-              and(
-                ilike(castaways.name, `${name}%`),
-                eq(seasonMembership.castawaySeasonNumber, season),
-              ),
-            )
-            .innerJoin(
-              seasonMembership,
-              eq(castaways.id, seasonMembership.castawayId),
-            )
-            .innerJoin(
-              seasons,
-              eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-            );
+          try {
+            const castawaysAndSeasons = await db
+              .select({
+                id: castaways.id,
+                name: castaways.name,
+                seasonNumber: seasonMembership.castawaySeasonNumber,
+                seasonName: seasons.name,
+              })
+              .from(castaways)
+              .where(
+                and(
+                  ilike(castaways.name, `${name}%`),
+                  eq(seasonMembership.castawaySeasonNumber, season),
+                ),
+              )
+              .innerJoin(
+                seasonMembership,
+                eq(castaways.id, seasonMembership.castawayId),
+              )
+              .innerJoin(
+                seasons,
+                eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
+              );
 
-          const res = joinCastawaysWithSeasons(castawaysAndSeasons);
+            const res = joinCastawaysWithSeasons(castawaysAndSeasons);
 
-          return ok(res);
+            return ok(res);
+          } catch (e) {
+            if (e instanceof Error) {
+              return err({
+                type: "DATABASE_ERROR",
+                message: `Error occurred querying the database: ${e.message}`,
+              } satisfies DBError);
+            }
+
+            return err({
+              type: "UNKNOWN",
+              message: "An unknown error occurred",
+            } satisfies UnknownError);
+          }
         },
       )
       .with(
@@ -93,27 +131,41 @@ export const castawaysService: CastawaysService = {
           name: P.string,
         },
         async ({ name }) => {
-          const castawaysAndSeasons = await db
-            .select({
-              id: castaways.id,
-              name: castaways.name,
-              seasonNumber: seasonMembership.castawaySeasonNumber,
-              seasonName: seasons.name,
-            })
-            .from(castaways)
-            .where(ilike(castaways.name, `${name}%`))
-            .innerJoin(
-              seasonMembership,
-              eq(castaways.id, seasonMembership.castawayId),
-            )
-            .innerJoin(
-              seasons,
-              eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-            );
+          try {
+            const castawaysAndSeasons = await db
+              .select({
+                id: castaways.id,
+                name: castaways.name,
+                seasonNumber: seasonMembership.castawaySeasonNumber,
+                seasonName: seasons.name,
+              })
+              .from(castaways)
+              .where(ilike(castaways.name, `${name}%`))
+              .innerJoin(
+                seasonMembership,
+                eq(castaways.id, seasonMembership.castawayId),
+              )
+              .innerJoin(
+                seasons,
+                eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
+              );
 
-          const res = joinCastawaysWithSeasons(castawaysAndSeasons);
+            const res = joinCastawaysWithSeasons(castawaysAndSeasons);
 
-          return ok(res);
+            return ok(res);
+          } catch (e) {
+            if (e instanceof Error) {
+              return err({
+                type: "DATABASE_ERROR",
+                message: `Error occurred querying the database: ${e.message}`,
+              } satisfies DBError);
+            }
+
+            return err({
+              type: "UNKNOWN",
+              message: "An unknown error occurred",
+            } satisfies UnknownError);
+          }
         },
       )
       .with(
@@ -121,6 +173,45 @@ export const castawaysService: CastawaysService = {
           season: P.number,
         },
         async ({ season }) => {
+          try {
+            const castawaysAndSeasons = await db
+              .select({
+                id: castaways.id,
+                name: castaways.name,
+                seasonNumber: seasonMembership.castawaySeasonNumber,
+                seasonName: seasons.name,
+              })
+              .from(castaways)
+              .where(eq(seasonMembership.castawaySeasonNumber, season))
+              .innerJoin(
+                seasonMembership,
+                eq(castaways.id, seasonMembership.castawayId),
+              )
+              .innerJoin(
+                seasons,
+                eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
+              );
+
+            const res = joinCastawaysWithSeasons(castawaysAndSeasons);
+
+            return ok(res);
+          } catch (e) {
+            if (e instanceof Error) {
+              return err({
+                type: "DATABASE_ERROR",
+                message: `Error occurred querying the database: ${e.message}`,
+              } satisfies DBError);
+            }
+
+            return err({
+              type: "UNKNOWN",
+              message: "An unknown error occurred",
+            } satisfies UnknownError);
+          }
+        },
+      )
+      .otherwise(async () => {
+        try {
           const castawaysAndSeasons = await db
             .select({
               id: castaways.id,
@@ -129,7 +220,6 @@ export const castawaysService: CastawaysService = {
               seasonName: seasons.name,
             })
             .from(castaways)
-            .where(eq(seasonMembership.castawaySeasonNumber, season))
             .innerJoin(
               seasonMembership,
               eq(castaways.id, seasonMembership.castawayId),
@@ -142,29 +232,19 @@ export const castawaysService: CastawaysService = {
           const res = joinCastawaysWithSeasons(castawaysAndSeasons);
 
           return ok(res);
-        },
-      )
-      .otherwise(async () => {
-        const castawaysAndSeasons = await db
-          .select({
-            id: castaways.id,
-            name: castaways.name,
-            seasonNumber: seasonMembership.castawaySeasonNumber,
-            seasonName: seasons.name,
-          })
-          .from(castaways)
-          .innerJoin(
-            seasonMembership,
-            eq(castaways.id, seasonMembership.castawayId),
-          )
-          .innerJoin(
-            seasons,
-            eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-          );
+        } catch (e) {
+          if (e instanceof Error) {
+            return err({
+              type: "DATABASE_ERROR",
+              message: `Error occurred querying the database: ${e.message}`,
+            } satisfies DBError);
+          }
 
-        const res = joinCastawaysWithSeasons(castawaysAndSeasons);
-
-        return ok(res);
+          return err({
+            type: "UNKNOWN",
+            message: "An unknown error occurred",
+          } satisfies UnknownError);
+        }
       });
   },
 };
