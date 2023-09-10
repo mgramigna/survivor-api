@@ -1,6 +1,12 @@
 import { Elysia, t } from "elysia";
 import { db } from "./db";
-import { Season, castaways, seasonMembership, seasons } from "./db/schema";
+import {
+  Season,
+  Tribe,
+  castaways,
+  seasonMembership,
+  seasons,
+} from "./db/schema";
 import {
   ApiResponse,
   CastawayReadResponse,
@@ -10,6 +16,7 @@ import { castawaysService } from "./services/castaways";
 import { seasonService } from "./services/season";
 import { match } from "ts-pattern";
 import { wrapApiResponse } from "./util";
+import { tribeService } from "./services/tribes";
 
 const app = new Elysia()
   .group("/castaways", (app) =>
@@ -71,6 +78,44 @@ const app = new Elysia()
         {
           params: t.Object({
             number: t.Numeric(),
+          }),
+        },
+      ),
+  )
+  .group("/tribes", (app) =>
+    app
+      .get(
+        "/:id",
+        async (ctx): Promise<ApiResponse<Tribe>> => {
+          const tribesRes = await tribeService.readById(ctx.params.id);
+
+          return wrapApiResponse(tribesRes, ctx.set);
+        },
+        {
+          params: t.Object({
+            id: t.Numeric(),
+          }),
+        },
+      )
+      .get(
+        "/",
+        async (ctx): Promise<ApiResponse<Tribe[]>> => {
+          const tribesRes = await tribeService.search(ctx.query);
+
+          return wrapApiResponse(tribesRes, ctx.set);
+        },
+        {
+          query: t.Object({
+            name: t.Optional(t.String()),
+            type: t.Optional(
+              t.Union([
+                t.Literal<Tribe["type"]>("merge"),
+                t.Literal<Tribe["type"]>("starting"),
+                t.Literal<Tribe["type"]>("swap"),
+                t.Literal<Tribe["type"]>("other"),
+              ]),
+            ),
+            season: t.Optional(t.Numeric()),
           }),
         },
       ),
