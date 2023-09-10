@@ -8,6 +8,7 @@
     "migrate": "bun run bin/migrate.ts"
   },
   "dependencies": {
+    "@elysiajs/swagger": "^0.6.1",
     "@vercel/postgres": "^0.4.1",
     "drizzle-orm": "^0.28.6",
     "elysia": "^0.6.20",
