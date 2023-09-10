@@ -1,7 +1,12 @@
-import { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import {
+  InferColumnsDataTypes,
+  InferInsertModel,
+  InferSelectModel,
+} from "drizzle-orm";
 import {
   date,
   integer,
+  pgEnum,
   pgTable,
   serial,
   text,
@@ -41,3 +46,22 @@ export const seasonMembership = pgTable("season_membership", {
 
 export type SeasonMembership = InferSelectModel<typeof seasonMembership>;
 export type SeasonMembershipInsert = InferInsertModel<typeof seasonMembership>;
+
+export const tribeTypeEnum = pgEnum("tribe_tybe", [
+  "starting",
+  "merge",
+  "swap",
+  "other",
+]);
+
+export const tribes = pgTable("tribes", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 64 }).notNull(),
+  type: tribeTypeEnum("type").notNull(),
+  tribeSeasonNumber: integer("tribe_season_number")
+    .references(() => seasons.seasonNumber)
+    .notNull(),
+});
+
+export type Tribe = InferSelectModel<typeof tribes>;
+export type TribeInsert = InferInsertModel<typeof tribes>;
