@@ -1,20 +1,22 @@
 import { Elysia, t } from "elysia";
 import { db } from "./db";
-import { castaways, seasonMembership, seasons } from "./db/schema";
-import { eq, ilike, sql } from "drizzle-orm";
+import { Season, castaways, seasonMembership, seasons } from "./db/schema";
 import { match, P } from "ts-pattern";
-
-type ApiResponse<T> = Promise<
-  { ok: false; error: string } | { ok: true; data: T }
->;
-
-type CastawayReadResponse = {
-  id: number;
-  name: string;
-  seasons: number[];
-};
-
-type CastawaySearchResponse = CastawayReadResponse[];
+import {
+  ApiResponse,
+  CastawayReadResponse,
+  CastawaySearchResponse,
+} from "./types";
+import {
+  getAllCastawaysWithSeasons,
+  getAllSeasons,
+  getCastawayWithSeasonsById,
+  getCastawayWithSeasonsByName,
+  getCastawayWithSeasonsByNameAndSeason,
+  getCastawayWithSeasonsBySeason,
+  getSeasonByNumber,
+  getSeasonsByName,
+} from "./db/service";
 
 const app = new Elysia()
   .group("/castaways", (app) =>
@@ -22,68 +24,111 @@ const app = new Elysia()
       .get(
         "/",
         async (ctx): ApiResponse<CastawaySearchResponse> => {
-          const castawaysAndSeasons = await match(ctx.query)
+          console.log(ctx.query);
+          const res = await match(ctx.query)
+            .with(
+              {
+                name: P.string,
+                season: P.number,
+              },
+              ({ name, season }) =>
+                getCastawayWithSeasonsByNameAndSeason(name, season),
+            )
             .with(
               {
                 name: P.string,
               },
-              ({ name }) =>
-                db
-                  .select({
-                    id: castaways.id,
-                    name: castaways.name,
-                    season: seasonMembership.castawaySeasonNumber,
-                  })
-                  .from(castaways)
-                  .where(ilike(castaways.name, `${name}%`))
-                  .innerJoin(
-                    seasonMembership,
-                    eq(castaways.id, seasonMembership.castawayId),
-                  ),
+              ({ name }) => getCastawayWithSeasonsByName(name),
             )
-            .otherwise(() =>
-              db
-                .select({
-                  id: castaways.id,
-                  name: castaways.name,
-                  season: seasonMembership.castawaySeasonNumber,
-                })
-                .from(castaways)
-                .innerJoin(
-                  seasonMembership,
-                  eq(castaways.id, seasonMembership.castawayId),
-                ),
-            );
+            .with(
+              {
+                season: P.number,
+              },
+              ({ season }) => getCastawayWithSeasonsBySeason(season),
+            )
+            .otherwise(() => getAllCastawaysWithSeasons());
 
-          const lookup: Map<number, { name: string; seasons: number[] }> =
-            new Map();
-
-          castawaysAndSeasons.forEach((cas) => {
-            if (lookup.has(cas.id)) {
-              if (!lookup.get(cas.id)!.seasons.includes(cas.season)) {
-                lookup.get(cas.id)!.seasons.push(cas.season);
-              }
-            } else {
-              lookup.set(cas.id, {
-                name: cas.name,
-                seasons: [cas.season],
-              });
-            }
-          });
-
-          const res: CastawaySearchResponse = [];
-
-          for (const [id, info] of lookup) {
-            res.push({
-              id,
-              ...info,
-            });
+          if (res.isOk()) {
+            return {
+              ok: true as const,
+              data: res.value,
+            };
+          } else {
+            return {
+              ok: false as const,
+              error: res.error,
+            };
           }
+        },
+        {
+          query: t.Object({
+            name: t.Optional(t.String()),
+            season: t.Optional(t.Numeric()),
+          }),
+        },
+      )
+      .get(
+        "/:id",
+        async (ctx): ApiResponse<CastawayReadResponse> => {
+          const castawayAndSeasons = await getCastawayWithSeasonsById(
+            ctx.params.id,
+          );
 
-          return {
-            ok: true,
-            data: res,
-          };
+          if (castawayAndSeasons.isOk()) {
+            return {
+              ok: true as const,
+              data: castawayAndSeasons.value,
+            };
+          } else {
+            return {
+              ok: false as const,
+              error: castawayAndSeasons.error,
+            };
+          }
+        },
+        {
+          params: t.Object({
+            id: t.Numeric(),
+          }),
+        },
+      ),
+  )
+  .group("/seasons", (app) =>
+    app
+      .get(
+        "/",
+        async (ctx): ApiResponse<Season[]> => {
+          return match(ctx.query)
+            .with({ name: P.string }, async ({ name }) => {
+              const seasonsRes = await getSeasonsByName(name);
+
+              if (seasonsRes.isOk()) {
+                return {
+                  ok: true as const,
+                  data: seasonsRes.value,
+                };
+              } else {
+                return {
+                  ok: false as const,
+                  error: seasonsRes.error,
+                };
+              }
+            })
+            .otherwise(async () => {
+              const seasonsRes = await getAllSeasons();
+
+              if (seasonsRes.isOk()) {
+                return {
+                  ok: true as const,
+                  data: seasonsRes.value,
+                };
+              } else {
+                return {
+                  ok: false as const,
+                  error: seasonsRes.error,
+                };
+              }
+            });
         },
         {
           query: t.Object({
@@ -92,38 +137,25 @@ const app = new Elysia()
         },
       )
       .get(
-        "/:id",
-        async (ctx): ApiResponse<CastawayReadResponse> => {
-          const castawayAndSeasons = await db
-            .select({
-              id: castaways.id,
-              name: castaways.name,
-              season: seasonMembership.castawaySeasonNumber,
-            })
-            .from(castaways)
-            .innerJoin(
-              seasonMembership,
-              eq(castaways.id, seasonMembership.castawayId),
-            )
-            .where(eq(castaways.id, ctx.params.id));
+        "/:number",
+        async (ctx): ApiResponse<Season> => {
+          const seasonsRes = await getSeasonByNumber(ctx.params.number);
 
-          return match(castawayAndSeasons.length)
-            .with(0, () => ({
+          if (seasonsRes.isOk()) {
+            return {
+              ok: true as const,
+              data: seasonsRes.value,
+            };
+          } else {
+            return {
               ok: false as const,
-              error: `Castaway with id "${ctx.params.id} not found`,
-            }))
-            .otherwise(() => ({
-              ok: true,
-              data: {
-                id: castawayAndSeasons[0].id,
-                name: castawayAndSeasons[0].name,
-                seasons: castawayAndSeasons.map((cas) => cas.season),
-              },
-            }));
+              error: seasonsRes.error,
+            };
+          }
         },
         {
           params: t.Object({
-            id: t.Numeric(),
+            number: t.Numeric(),
           }),
         },
       ),
