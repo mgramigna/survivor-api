@@ -2,10 +2,12 @@
   "name": "survivor-api",
   "version": "1.0.50",
   "scripts": {
+    "build": "bun build ./src/index.ts --outdir=dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
     "generate": "drizzle-kit generate:pg",
-    "migrate": "bun run bin/migrate.ts"
+    "migrate": "bun run bin/migrate.ts",
+    "start": "bun run dist/index.js"
   },
   "dependencies": {
     "@elysiajs/swagger": "^0.6.1",
