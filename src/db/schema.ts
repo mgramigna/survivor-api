@@ -29,6 +29,7 @@ export const seasons = pgTable("seasons", {
   endDate: date("end_date"),
   numEpisodes: integer("num_episodes"),
   numCastaways: integer("num_castaways"),
+  numDays: integer("num_days"),
 });
 
 export type Season = InferSelectModel<typeof seasons>;
@@ -57,7 +58,7 @@ export const tribeTypeEnum = pgEnum("tribe_tybe", [
 export const tribes = pgTable("tribes", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 64 }).notNull(),
-  type: tribeTypeEnum("type").notNull(),
+  type: tribeTypeEnum("type"),
   tribeSeasonNumber: integer("tribe_season_number")
     .references(() => seasons.seasonNumber)
     .notNull(),

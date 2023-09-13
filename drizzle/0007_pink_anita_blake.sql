@@ -1,0 +1,1 @@
+ALTER TABLE "tribes" ALTER COLUMN "type" DROP NOT NULL;

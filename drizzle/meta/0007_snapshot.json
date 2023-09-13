@@ -1,0 +1,257 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "id": "262c7943-6043-4098-9ada-8292a5803edb",
+  "prevId": "2956c326-e12d-404f-8999-aea2b16f78c6",
+  "tables": {
+    "castaways": {
+      "name": "castaways",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "season_membership": {
+      "name": "season_membership",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "castaway_id": {
+          "name": "castaway_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "castaway_season_number": {
+          "name": "castaway_season_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "season_membership_castaway_id_castaways_id_fk": {
+          "name": "season_membership_castaway_id_castaways_id_fk",
+          "tableFrom": "season_membership",
+          "tableTo": "castaways",
+          "columnsFrom": [
+            "castaway_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "season_membership_castaway_season_number_seasons_season_number_fk": {
+          "name": "season_membership_castaway_season_number_seasons_season_number_fk",
+          "tableFrom": "season_membership",
+          "tableTo": "seasons",
+          "columnsFrom": [
+            "castaway_season_number"
+          ],
+          "columnsTo": [
+            "season_number"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "seasons": {
+      "name": "seasons",
+      "schema": "",
+      "columns": {
+        "season_number": {
+          "name": "season_number",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "num_episodes": {
+          "name": "num_episodes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "num_castaways": {
+          "name": "num_castaways",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "tribe_membership": {
+      "name": "tribe_membership",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "castaway_id": {
+          "name": "castaway_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tribe_id": {
+          "name": "tribe_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tribe_membership_castaway_id_castaways_id_fk": {
+          "name": "tribe_membership_castaway_id_castaways_id_fk",
+          "tableFrom": "tribe_membership",
+          "tableTo": "castaways",
+          "columnsFrom": [
+            "castaway_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tribe_membership_tribe_id_tribes_id_fk": {
+          "name": "tribe_membership_tribe_id_tribes_id_fk",
+          "tableFrom": "tribe_membership",
+          "tableTo": "tribes",
+          "columnsFrom": [
+            "tribe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "tribes": {
+      "name": "tribes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "tribe_tybe",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tribe_season_number": {
+          "name": "tribe_season_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tribes_tribe_season_number_seasons_season_number_fk": {
+          "name": "tribes_tribe_season_number_seasons_season_number_fk",
+          "tableFrom": "tribes",
+          "tableTo": "seasons",
+          "columnsFrom": [
+            "tribe_season_number"
+          ],
+          "columnsTo": [
+            "season_number"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {
+    "tribe_tybe": {
+      "name": "tribe_tybe",
+      "values": {
+        "starting": "starting",
+        "merge": "merge",
+        "swap": "swap",
+        "other": "other"
+      }
+    }
+  },
+  "schemas": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  }
+}

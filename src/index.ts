@@ -35,7 +35,10 @@ const app = new Elysia()
       .get(
         "/",
         async (ctx): Promise<ApiResponse<CastawaySearchResponse>> => {
-          const res = await castawaysService.search(ctx.query);
+          const res = await castawaysService.search({
+            ...ctx.query,
+            returning: ctx.query.returning === "true",
+          });
 
           return wrapApiResponse(res, ctx.set);
         },
@@ -44,6 +47,9 @@ const app = new Elysia()
             {
               name: t.Optional(t.String()),
               season: t.Optional(t.Numeric()),
+              returning: t.Optional(
+                t.Union([t.Literal("true"), t.Literal("false")]),
+              ),
             },
             {
               description: "Search for castaways by name or season",
@@ -166,10 +172,10 @@ const app = new Elysia()
               name: t.Optional(t.String()),
               type: t.Optional(
                 t.Union([
-                  t.Literal<Tribe["type"]>("merge"),
-                  t.Literal<Tribe["type"]>("starting"),
-                  t.Literal<Tribe["type"]>("swap"),
-                  t.Literal<Tribe["type"]>("other"),
+                  t.Literal<NonNullable<Tribe["type"]>>("merge"),
+                  t.Literal<NonNullable<Tribe["type"]>>("starting"),
+                  t.Literal<NonNullable<Tribe["type"]>>("swap"),
+                  t.Literal<NonNullable<Tribe["type"]>>("other"),
                 ]),
               ),
               season: t.Optional(t.Numeric()),

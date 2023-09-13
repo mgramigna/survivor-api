@@ -1,6 +1,6 @@
 import { Result, err, ok } from "neverthrow";
 import { castaways, seasonMembership, seasons } from "../db/schema";
-import { and, eq, ilike } from "drizzle-orm";
+import { and, asc, eq, ilike } from "drizzle-orm";
 import { P, match } from "ts-pattern";
 import { db } from "../db";
 import { joinCastawaysWithSeasons } from "../db/util";
@@ -21,6 +21,7 @@ type CastawaysService = {
   search: (args: {
     name?: string;
     season?: number;
+    returning?: boolean;
   }) => Promise<Result<CastawayWithSeasons[], DBError | UnknownError>>;
 };
 
@@ -76,7 +77,7 @@ export const castawaysService: CastawaysService = {
       } satisfies UnknownError);
     }
   },
-  search: async ({ name, season }) => {
+  search: async ({ name, season, returning }) => {
     try {
       const castawaysAndSeasons = await db
         .select({
@@ -103,11 +104,14 @@ export const castawaysService: CastawaysService = {
         .innerJoin(
           seasons,
           eq(seasonMembership.castawaySeasonNumber, seasons.seasonNumber),
-        );
+        )
+        .orderBy(castaways.id);
 
       const res = joinCastawaysWithSeasons(castawaysAndSeasons);
 
-      return ok(res);
+      return match(returning)
+        .with(true, () => ok(res.filter((r) => r.seasons.length > 1)))
+        .otherwise(() => ok(res));
     } catch (e) {
       if (e instanceof Error) {
         return err({
