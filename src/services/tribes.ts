@@ -42,6 +42,7 @@ export const tribeService: TribeService = {
           seasonNumber: tribes.tribeSeasonNumber,
           castawayId: castaways.id,
           memberName: castaways.name,
+          castawayLink: castaways.link,
         })
         .from(tribes)
         .where(eq(tribes.id, id))
@@ -64,6 +65,7 @@ export const tribeService: TribeService = {
             members: tribesRes.map((tr) => ({
               id: tr.castawayId,
               name: tr.memberName,
+              link: tr.castawayLink,
             })),
           }),
         );

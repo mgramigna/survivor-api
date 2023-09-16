@@ -64,6 +64,7 @@ export function joinTribeWithCastaways(
       entry.members.push({
         id: castawayId,
         name: castawayName,
+        link: null,
       });
     }
 
@@ -77,12 +78,14 @@ export function joinCastawaysWithSeasons(
   input: {
     id: number;
     name: string;
+    link: string | null;
     seasonNumber: number;
     seasonName: string | null;
   }[],
 ): {
   id: number;
   name: string;
+  link: string | null;
   seasons: {
     number: number;
     name: string | null;
@@ -90,7 +93,7 @@ export function joinCastawaysWithSeasons(
 }[] {
   const lookup: Map<
     number,
-    { name: string; seasons: Map<number, string | null> }
+    { name: string; link: string | null; seasons: Map<number, string | null> }
   > = new Map();
 
   input.forEach((cas) => {
@@ -106,6 +109,7 @@ export function joinCastawaysWithSeasons(
         lookup.set(cas.id, {
           name: cas.name,
           seasons: newMap,
+          link: cas.link,
         });
       });
   });
@@ -113,6 +117,7 @@ export function joinCastawaysWithSeasons(
   const res: {
     id: number;
     name: string;
+    link: string | null;
     seasons: {
       number: number;
       name: string | null;
@@ -123,6 +128,7 @@ export function joinCastawaysWithSeasons(
     const entry: (typeof res)[number] = {
       id,
       name: info.name,
+      link: info.link,
       seasons: [],
     };
 

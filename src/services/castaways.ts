@@ -32,6 +32,7 @@ export const castawaysService: CastawaysService = {
         .select({
           id: castaways.id,
           name: castaways.name,
+          link: castaways.link,
           seasonNumber: seasonMembership.castawaySeasonNumber,
           seasonName: seasons.name,
         })
@@ -57,6 +58,7 @@ export const castawaysService: CastawaysService = {
           ok({
             id: castawayAndSeasons[0].id,
             name: castawayAndSeasons[0].name,
+            link: castawayAndSeasons[0].link,
             seasons: castawayAndSeasons.map((cas) => ({
               number: cas.seasonNumber,
               name: cas.seasonName,
@@ -83,6 +85,7 @@ export const castawaysService: CastawaysService = {
         .select({
           id: castaways.id,
           name: castaways.name,
+          link: castaways.link,
           seasonNumber: seasonMembership.castawaySeasonNumber,
           seasonName: seasons.name,
         })
