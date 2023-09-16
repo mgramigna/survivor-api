@@ -64,6 +64,13 @@
       "when": 1694488329635,
       "tag": "0008_great_maelstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1694895376080,
+      "tag": "0009_futuristic_paladin",
+      "breakpoints": true
     }
   ]
 }
