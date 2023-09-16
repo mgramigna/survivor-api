@@ -15,6 +15,8 @@ import {
 import { db } from "../src/db";
 import { desc, eq } from "drizzle-orm";
 
+const WIKI_BASE_URL = "https://survivor.fandom.com";
+
 // Their names changed on the wiki between seasons
 // Ensure these are merged together
 const NAME_TRANSFORM = new Map([
@@ -141,22 +143,26 @@ function scrapeSeasonInfo($: CheerioAPI): {
   };
 }
 
-function scrapeCastaways($: CheerioAPI): string[] {
+function scrapeCastaways($: CheerioAPI): { name: string; link: string }[] {
   return $("#Castaways")
     .parent()
     .next()
     .find("b")
     .map((_, e) => {
       let castawayName = $(e).text();
+      const castawayLink = $(e).find("a").attr("href");
 
       if (NAME_TRANSFORM.has(castawayName)) {
         castawayName = NAME_TRANSFORM.get(castawayName)!;
       }
 
-      return castawayName;
+      return {
+        name: castawayName,
+        link: castawayLink ? `${WIKI_BASE_URL}${castawayLink}` : "",
+      };
     })
     .toArray()
-    .filter((t) => t !== "Notes:" && !t.startsWith("^")); // Filter out any footnotes
+    .filter((t) => t.name !== "Notes:" && !t.name.startsWith("^")); // Filter out any footnotes
 }
 
 function scrapeTribeMemberships(
@@ -232,6 +238,7 @@ async function scrape(
     startingSeasonMembershipId?: number;
   },
   withMerge = true,
+  force = false,
 ): Promise<{
   numCastawayInserts: number;
   numTribeInserts: number;
@@ -246,17 +253,19 @@ async function scrape(
 
   const seasonInfo = scrapeSeasonInfo($);
 
-  const [existingSeason] = await db
-    .select()
-    .from(seasons)
-    .where(eq(seasons.seasonNumber, seasonInfo.seasonNumber))
-    .limit(1);
+  if (!force) {
+    const [existingSeason] = await db
+      .select()
+      .from(seasons)
+      .where(eq(seasons.seasonNumber, seasonInfo.seasonNumber))
+      .limit(1);
 
-  if (existingSeason) {
-    return null;
+    if (existingSeason) {
+      return null;
+    }
   }
 
-  const castawayNames = scrapeCastaways($);
+  const castawayInfo = scrapeCastaways($);
   const tribeInfo = scrapeTribes($, withMerge);
   const tribeMemberships = scrapeTribeMemberships(
     $,
@@ -266,19 +275,21 @@ async function scrape(
 
   await db.insert(seasons).values(seasonInfo).onConflictDoNothing();
 
-  const castawayInserts: CastawayInsert[] = castawayNames.map((n, i) => {
-    if (castawayLookup.has(n)) {
+  const castawayInserts: CastawayInsert[] = castawayInfo.map((c, i) => {
+    if (castawayLookup.has(c.name)) {
       return {
-        id: castawayLookup.get(n)!,
-        name: n,
+        id: castawayLookup.get(c.name)!,
+        name: c.name,
+        link: c.link,
       };
     }
 
     const newId = startingCastawayId + i;
-    castawayLookup.set(n, newId);
+    castawayLookup.set(c.name, newId);
     return {
       id: newId,
-      name: n,
+      name: c.name,
+      link: c.link,
     };
   });
 
@@ -295,12 +306,12 @@ async function scrape(
   const seasonMembershipInserts: SeasonMembershipInsert[] = [];
 
   let seasonMembershipIdx = 0;
-  for (const name of castawayNames) {
-    if (!castawayLookup.has(name)) {
+  for (const castaway of castawayInfo) {
+    if (!castawayLookup.has(castaway.name)) {
       throw new Error("unreachable");
     }
 
-    const castawayId = castawayLookup.get(name)!;
+    const castawayId = castawayLookup.get(castaway.name)!;
     seasonMembershipInserts.push({
       id: startingSeasonMembershipId + seasonMembershipIdx,
       castawayId,
@@ -386,6 +397,7 @@ for (const url of SEASON_WIKI_URLS) {
     },
     // Skip merge detection for 45 since it hasn't happened yet
     url !== "https://survivor.fandom.com/wiki/Survivor_45",
+    Bun.env.FORCE === "true",
   );
   await new Promise((resolve) => setTimeout(resolve, 1000));
   if (res != null) {
