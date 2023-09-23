@@ -10,10 +10,10 @@
     "start": "bun run dist/index.js"
   },
   "dependencies": {
-    "@elysiajs/swagger": "^0.6.1",
+    "@elysiajs/swagger": "^0.7.2",
     "@neondatabase/serverless": "^0.6.0",
     "drizzle-orm": "^0.28.6",
-    "elysia": "^0.6.20",
+    "elysia": "^0.7.12",
     "neverthrow": "^6.0.0",
     "ts-pattern": "^5.0.5"
   },
