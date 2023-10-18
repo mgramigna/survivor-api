@@ -71,6 +71,13 @@
       "when": 1694895376080,
       "tag": "0009_futuristic_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1697667141486,
+      "tag": "0010_light_annihilus",
+      "breakpoints": true
     }
   ]
 }

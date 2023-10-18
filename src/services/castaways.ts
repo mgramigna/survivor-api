@@ -9,6 +9,8 @@ import { DBError, NotFoundError, UnknownError } from "../types/errors";
 export type CastawayWithSeasons = {
   id: number;
   name: string;
+  link?: string | null;
+  image?: string | null;
   seasons: { name: string | null; number: number }[];
 };
 
@@ -33,6 +35,7 @@ export const castawaysService: CastawaysService = {
           id: castaways.id,
           name: castaways.name,
           link: castaways.link,
+          image: castaways.image,
           seasonNumber: seasonMembership.castawaySeasonNumber,
           seasonName: seasons.name,
         })
@@ -59,6 +62,7 @@ export const castawaysService: CastawaysService = {
             id: castawayAndSeasons[0].id,
             name: castawayAndSeasons[0].name,
             link: castawayAndSeasons[0].link,
+            image: castawayAndSeasons[0].image,
             seasons: castawayAndSeasons.map((cas) => ({
               number: cas.seasonNumber,
               name: cas.seasonName,
@@ -86,6 +90,7 @@ export const castawaysService: CastawaysService = {
           id: castaways.id,
           name: castaways.name,
           link: castaways.link,
+          image: castaways.image,
           seasonNumber: seasonMembership.castawaySeasonNumber,
           seasonName: seasons.name,
         })

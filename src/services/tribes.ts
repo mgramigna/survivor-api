@@ -43,6 +43,7 @@ export const tribeService: TribeService = {
           castawayId: castaways.id,
           memberName: castaways.name,
           castawayLink: castaways.link,
+          castawayImage: castaways.image,
         })
         .from(tribes)
         .where(eq(tribes.id, id))
@@ -66,6 +67,7 @@ export const tribeService: TribeService = {
               id: tr.castawayId,
               name: tr.memberName,
               link: tr.castawayLink,
+              image: tr.castawayImage,
             })),
           }),
         );

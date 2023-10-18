@@ -1,0 +1,1 @@
+ALTER TABLE "castaways" ADD COLUMN "image" text;

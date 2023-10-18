@@ -17,6 +17,7 @@ export const castaways = pgTable("castaways", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 64 }).notNull(),
   link: text("link"),
+  image: text("image"),
 });
 
 export type Castaway = InferSelectModel<typeof castaways>;
