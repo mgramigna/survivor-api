@@ -25,7 +25,7 @@ const app = new Elysia()
       documentation: {
         info: {
           title: "Survivor API",
-          version: "0.0.1",
+          version: "0.0.2",
         },
       },
     }),
