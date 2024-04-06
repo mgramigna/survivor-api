@@ -3,19 +3,11 @@ import {
   InferInsertModel,
   InferSelectModel,
 } from "drizzle-orm";
-import {
-  date,
-  integer,
-  pgEnum,
-  pgTable,
-  serial,
-  text,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { int, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const castaways = pgTable("castaways", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 64 }).notNull(),
+export const castaways = sqliteTable("castaways", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: text("name", { length: 64 }).notNull(),
   link: text("link"),
   image: text("image"),
 });
@@ -23,12 +15,12 @@ export const castaways = pgTable("castaways", {
 export type Castaway = InferSelectModel<typeof castaways>;
 export type CastawayInsert = InferInsertModel<typeof castaways>;
 
-export const seasons = pgTable("seasons", {
+export const seasons = sqliteTable("seasons", {
   seasonNumber: integer("season_number").primaryKey(),
-  name: varchar("name", { length: 128 }),
-  location: varchar("location", { length: 128 }),
-  startDate: date("start_date"),
-  endDate: date("end_date"),
+  name: text("name", { length: 128 }),
+  location: text("location", { length: 128 }),
+  startDate: integer("start_date", { mode: "timestamp" }),
+  endDate: integer("start_date", { mode: "timestamp" }),
   numEpisodes: integer("num_episodes"),
   numCastaways: integer("num_castaways"),
   numDays: integer("num_days"),
@@ -37,8 +29,8 @@ export const seasons = pgTable("seasons", {
 export type Season = InferSelectModel<typeof seasons>;
 export type SeasonInsert = InferInsertModel<typeof seasons>;
 
-export const seasonMembership = pgTable("season_membership", {
-  id: serial("id").primaryKey(),
+export const seasonMembership = sqliteTable("season_membership", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   castawayId: integer("castaway_id")
     .references(() => castaways.id)
     .notNull(),
@@ -50,17 +42,10 @@ export const seasonMembership = pgTable("season_membership", {
 export type SeasonMembership = InferSelectModel<typeof seasonMembership>;
 export type SeasonMembershipInsert = InferInsertModel<typeof seasonMembership>;
 
-export const tribeTypeEnum = pgEnum("tribe_tybe", [
-  "starting",
-  "merge",
-  "swap",
-  "other",
-]);
-
-export const tribes = pgTable("tribes", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 64 }).notNull(),
-  type: tribeTypeEnum("type"),
+export const tribes = sqliteTable("tribes", {
+  id: integer("id").primaryKey(),
+  name: text("name", { length: 64 }).notNull(),
+  type: text("type", { enum: ["starting", "merge", "swap", "other"] }),
   tribeSeasonNumber: integer("tribe_season_number")
     .references(() => seasons.seasonNumber)
     .notNull(),
@@ -69,8 +54,8 @@ export const tribes = pgTable("tribes", {
 export type Tribe = InferSelectModel<typeof tribes>;
 export type TribeInsert = InferInsertModel<typeof tribes>;
 
-export const tribeMembership = pgTable("tribe_membership", {
-  id: serial("id").primaryKey(),
+export const tribeMembership = sqliteTable("tribe_membership", {
+  id: integer("id").primaryKey(),
   castawayId: integer("castaway_id")
     .references(() => castaways.id)
     .notNull(),

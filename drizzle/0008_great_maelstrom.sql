@@ -1,1 +1,0 @@
-ALTER TABLE "seasons" ADD COLUMN "num_days" integer;

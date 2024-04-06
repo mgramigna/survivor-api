@@ -1,1 +1,0 @@
-ALTER TABLE "castaways" ADD COLUMN "link" text;

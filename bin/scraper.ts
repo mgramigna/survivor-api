@@ -273,7 +273,14 @@ async function scrape(
     tribeInfo.mergeTribe,
   );
 
-  await db.insert(seasons).values(seasonInfo).onConflictDoNothing();
+  await db
+    .insert(seasons)
+    .values({
+      ...seasonInfo,
+      startDate: seasonInfo.startDate ? new Date(seasonInfo.startDate) : null,
+      endDate: seasonInfo.endDate ? new Date(seasonInfo.endDate) : null,
+    })
+    .onConflictDoNothing();
 
   const castawayInserts: CastawayInsert[] = castawayInfo.map((c, i) => {
     if (castawayLookup.has(c.name)) {
@@ -335,8 +342,8 @@ async function scrape(
       t === tribeInfo.mergeTribe
         ? "merge"
         : SPECIAL_TRIBES.has(t)
-        ? "other"
-        : null,
+          ? "other"
+          : null,
     tribeSeasonNumber: seasonInfo.seasonNumber,
   }));
 

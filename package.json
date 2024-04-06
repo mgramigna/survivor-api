@@ -5,13 +5,13 @@
     "build": "bun build ./src/index.ts --outdir=dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
-    "generate": "drizzle-kit generate:pg",
+    "generate": "drizzle-kit generate:sqlite",
     "migrate": "bun run bin/migrate.ts",
     "start": "bun run dist/index.js"
   },
   "dependencies": {
     "@elysiajs/swagger": "^0.7.2",
-    "@neondatabase/serverless": "^0.6.0",
+    "@libsql/client": "^0.5.3",
     "drizzle-orm": "^0.28.6",
     "elysia": "^0.7.12",
     "neverthrow": "^6.0.0",
